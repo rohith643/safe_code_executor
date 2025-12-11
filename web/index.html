@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Safe Code Executor</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg">
+    <!-- Subtle animated machine background -->
+    <div class="gear gear-1"></div>
+    <div class="gear gear-2"></div>
+    <div class="gear gear-3"></div>
+    <div class="scan-lines"></div>
+  </div>
+
+  <main class="container">
+    <h1>Safe Code Executor</h1>
+    <p class="subtitle">Run Python code safely in Docker. Simple, clean, and clear.</p>
+
+    <label for="code" class="label">Code</label>
+    <textarea id="code" spellcheck="false">print("Hello World")</textarea>
+
+    <div class="actions">
+      <button id="run">Run</button>
+      <span id="status" class="status"></span>
+    </div>
+
+    <div class="panels">
+      <section class="panel">
+        <h2>Output</h2>
+        <pre id="output"></pre>
+      </section>
+      <section class="panel error-panel">
+        <h2>Error</h2>
+        <pre id="error"></pre>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const runBtn = document.getElementById('run');
+    const codeEl = document.getElementById('code');
+    const outputEl = document.getElementById('output');
+    const errorEl = document.getElementById('error');
+    const statusEl = document.getElementById('status');
+
+    async function runCode() {
+      outputEl.textContent = '';
+      errorEl.textContent = '';
+      statusEl.textContent = 'Running...';
+      runBtn.disabled = true;
+
+      try {
+        const res = await fetch('http://localhost:5001/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: codeEl.value })
+        });
+
+        let data;
+        try { data = await res.json(); } catch (e) {
+          errorEl.textContent = 'Invalid response from API';
+          statusEl.textContent = 'Error';
+          runBtn.disabled = false;
+          return;
+        }
+
+        if (data.output) {
+          outputEl.textContent = data.output;
+          statusEl.textContent = 'Done';
+        } else if (data.error) {
+          errorEl.textContent = data.error;
+          statusEl.textContent = 'Failed';
+        } else {
+          errorEl.textContent = 'No output';
+          statusEl.textContent = 'Done';
+        }
+      } catch (e) {
+        errorEl.textContent = 'API unreachable. Is Flask running on port 5001?';
+        statusEl.textContent = 'Error';
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+
+    runBtn.addEventListener('click', runCode);
+  </script>
+</body>
+</html>
